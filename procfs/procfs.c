@@ -1,20 +1,12 @@
-#include <linux/init.h>
-#include <linux/module.h>
-#include <linux/kernel.h>
 #include <linux/errno.h>
 #include <linux/uaccess.h>
 #include <linux/list.h>
-
 #include "procfs.h"
 
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("wushengbang");
-MODULE_DESCRIPTION("A simple Linux kernel module");
-MODULE_VERSION("0.1");
 
 typedef int (*wsb_single_show_t)(struct seq_file *, void *);
 
-struct proc_dir_entry *proc_mkfile(const char *name, struct proc_dir_entry *parent, int *data);
+// struct proc_dir_entry *proc_mkfile(const char *name, struct proc_dir_entry *parent, int *data);
 
 /////////// 一个元素的读
 // 一个整数的读
@@ -63,7 +55,7 @@ static void *pda_start(struct seq_file *m, loff_t *ppos)
 }
 static void *pda_next(struct seq_file *m, void *v, loff_t *ppos)
 {
-    *ppos++;
+    (*ppos)++;
     pde_data_array_t *pda = (pde_data_array_t *)SEQ2DATA(m);
     if (*ppos >= pda->nr)
         return NULL;
@@ -77,19 +69,18 @@ static int pda_show(struct seq_file *m, void *v)
     
     if (pda->show) {
         int ret = pda->show(m, v);
-        if (ret)
-            return ret;
-        if (last_data = v)
-            seq_printf(m, "\n");
-        return 0;
+        seq_printf(m, "\n");
+        return ret;
     }
     if (pda->type == PROC_FT_INT) {
         seq_printf(m, "%d", *(int *)v);
     } else {
-        seq_printf(m, "%s", (const char *)v);
+        seq_printf(m, "%s", *(const char **)v);
     }
     if (v != last_data) {
-        seq_printf(m, ",\t");
+        seq_printf(m, ", ");
+    } else {
+        seq_printf(m, "\n");
     }
     return 0;
 }
@@ -148,45 +139,3 @@ void proc_remove_array(struct proc_dir_entry *pde)
 
 
 
-//////////////// 测试 ////////////
-struct proc_dir_entry *test, *test_arr;
-struct stu {
-    char name[16];
-    int age;
-};
-struct stu wsb;
-
-int da[] = {100, 2, 200, 3, 5, 6, 99, 110};
-
-
-int stu_show(struct seq_file *m, void *v)
-{
-    struct stu *s = (struct stu *)m->private;
-    seq_printf(m, "name: %s,\tage: %d\n", s->name, s->age);
-    return 0;
-}
-
-static int __init procfs_init(void) 
-{    
-    strncpy(wsb.name, "wushengbang", 16);
-    wsb.age = 39;
-    test = proc_mkfile_single_o("test", NULL, &wsb, stu_show);
-    if (!test) 
-        return -1;
-    test_arr = proc_mkfile_array_i("test_arr", NULL, da, sizeof(da) / sizeof(int));
-    if (!test_arr)
-        return -2;
-    
-    return 0;
-}
-
-static void __exit procfs_exit(void) 
-{
-    if (test)
-        proc_remove(test);
-    if (test_arr)
-        proc_remove_array(test_arr);
-}
-
-module_init(procfs_init);
-module_exit(procfs_exit);

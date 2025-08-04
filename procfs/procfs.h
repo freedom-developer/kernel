@@ -28,4 +28,6 @@ struct proc_dir_entry *proc_mkfile_array(const char *name, umode_t mode, struct 
 #define proc_mkfile_array_o(name, parent, data, nr, ele_size, show) \
     proc_mkfile_array((name), 0, (parent), PROC_FT_OTH, (data), (nr), ele_size, show)
 
+void proc_remove_array(struct proc_dir_entry *pde);
+
 #endif
